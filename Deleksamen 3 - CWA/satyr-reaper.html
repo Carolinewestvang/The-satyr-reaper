@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Satyr Reaper</title>
+    <style>
+       @import url('https://fonts.googleapis.com/css2?family=Rye&family=Titillium+Web:wght@300&display=swap');
+        body {
+            background-color: #7f5a83;
+            background-image: linear-gradient(315deg, #7f5a83 0%, #0d324d 74%);
+            color: #f3f3f3;
+            font-family: 'Titillium Web', sans-serif;
+            text-align: center;
+        }
+        h1, h3 {
+            font-family: 'Rye', cursive;
+        }
+        h1 {
+            font-size: 3rem;
+        }
+        #gamearea {
+            margin: 20px auto;
+            background: #fff;
+            float: right;
+        }
+        #container{/*Oppg.4.1: Lagt inn CSS for den nye HTML strukturen*/
+            float: left;
+            height: 600px;
+            width: 550px;
+            margin: 20px 0 0 30px;
+            text-align: left;
+        }
+        h2{
+            margin: 70px 0 70px 0;
+            font-family:"Calibri";
+            font-size: 3rem;
+        }
+        #newgame{
+            padding: 1rem;
+            font-size: 2rem;
+            display: none; /*Oppg. 4.2: satt en display: none her, slik at knappen starter som usynlig når spillet starter.*/
+            font-weight: bold;
+            font-family: "calibri";
+            color: black;
+            background-color: rgb(0, 172, 0);
+        }
+        #newgame:hover{
+            background-color: green;  
+        }
+        #seconds{
+            color: red;
+        }
+        #slayn{
+            color: lime;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="container"><!--Oppg.4.1: Ny div, for å kunne style hele seksjonen i CSS-->
+    <h1>The Satyr Reaper</h1>
+    <p>Play as the reaper. Slay as many Satyres as possible in one minute!</p>
+    <h2>Time left: <span id="seconds">60</span> seconds</h2><!--Oppg.4.1: Lagt inn span tagger, for å kunne referere til disse i javascripten-->
+    <h2 id="numberSlayn">Satyr's slayn: <span id="slayn">0</span></h2>
+    <button id="newgame" onclick="gameRestart()">Start new game</button><!--Oppg. 4.2: Knapp for å restarte game, med en onclick som kjører funksjonen jeg laget kalt gameRestart. Når knappen trykkes, vil dermed funksjonen kjøres.-->
+    </div>
+    <canvas id="gamearea"></canvas>
+
+
+    <script>
+        //Oppg.1: I denne seksjonen klargjøres canvas, bakgrunnsbildet på canvaset, bildene av reaper, og de to fiendene (satyrene).
+        //Sett opp Canvas for manipulasjon i JavaScript
+        var canvas = document.getElementById("gamearea");
+        canvas.width = 600;//Oppg. 2.3: Endret canvas bredde og høyde her, til 600x600
+        canvas.height = 600;
+        var ctx = canvas.getContext("2d");
+
+        //Gjør klar bakgrunnsbilde
+        var backgroundLoaded = false;
+        var background = new Image();
+        background.onload = function() {
+            backgroundLoaded = true;
+        }
+        background.src = "images/background.jpg";
+
+        //Gjør klar bilde av Reaper (spilleren)
+        var reaperLoaded = false;
+        var reaperImage = new Image();
+        reaperImage.onload = function() {
+            reaperLoaded = true;
+        }
+        reaperImage.src = "images/reaper.png";
+
+        //Gjør klar bilde av Satyr (fienden)
+        var enemyLoaded = false;
+        var enemyImage = new Image()
+        enemyImage.onload = function() {
+            enemyLoaded = true;
+        }
+        enemyImage.src = "images/enemy1.png";
+
+        //Oppg.3.1: Fiende nr. 2 - klargjøring
+        var enemyTwoLoaded = false;
+        var enemyTwoImage = new Image()
+        enemyTwoImage.onload = function() {
+            enemyTwoLoaded = true;
+        }
+        enemyTwoImage.src = "images/enemy2.png";
+
+        //Oppg.1: Variabler deklarerers ved å fylles med verdi/tom verdi, for å kunne brukes senere i koden.
+        //Gjør klar info om spillere, monster og tellere
+        var reaper = {speed: 256};
+        var enemy = {};
+        var enemiesSlayed = 0;
+        var two = {};//Oppg.3.1: Lage variabel med tom array til koordinatene til finde nr.2
+
+        //Oppg.1: Her er det laget en funksjon for å tegne opp karakterene i spillet.
+        //Lag en funksjon som kjører i gang spillelementene
+        //Plasser spilleren i midten av brettet, og fienden et vilkårlig sted innenfor spillbrettet
+        function drawCharacters() { //Oppg.3.2: Endret slik at denne funksjonen kun inneholder opptegningen av reaperen. Måtte skille alle tre opptegningene, for å forhindre at reaperen ble tegnet opp på nytt hver gang den tok en fiende.
+            reaper.x = canvas.width / 2;
+            reaper.y = canvas.height / 2;
+        }
+
+        function drawCharactersOne() { //Oppg.3.2: Laget denne funksjonen for opptegningen av den allerede eksisterende fienden.
+            enemy.x = 32 + (Math.random() * (canvas.width - 64));
+            enemy.y = 32 + (Math.random() * (canvas.height - 64));
+        }
+
+         function drawCharactersTwo(){ //Oppg.3.2: Laget en ny funksjon med opptegning av fiende nr.2. Slik har jeg nå mulighet til å skille opptegningen av de forskjellige fiendene og reaperen senere i koden.
+            two.x = 32 + (Math.random() * (canvas.width - 64)); //Oppg.3.1: gi two variabelen x og y koordinater ved hjelp av Math.ranndom, slik at fiende nr.2 også tegnes opp tilfeldig rundt i canvaset.
+            two.y = 32 + (Math.random() * (canvas.height - 64));
+         }
+
+        //Oppg.1: addEventListeners blir koblet til knappene, for å sjekke etter om knapper er trykket ned.
+        //Sjekk om spilleren har trykket ned (og holder) en tast:
+        document.addEventListener('keydown', buttonPressed);
+        document.addEventListener('keyup', buttonReleased);
+
+        //Deklarere variabler som skal brukes i funksjon buttonPressed. Her brukes boolean for å sette en status på variablene, som kan endres mellom true og false ift. hvilken tast som trykkes ned. I funksjonen blir det gjort flere sjekker om de forskjellige piltastene trykkes ned. Hvis piltasten er trykket ned er boolean = true, hvis den er sluppet opp er boolean = false.
+        //funksjon for å sjekke hvilken tast som er trykket, og bevege spilleren i henhold:
+        var buttonLeft, buttonRight, buttonUp, buttonDown = false;
+        function buttonPressed(e) {
+            //Venstre:
+            if(e.keyCode == 37) {
+                buttonLeft = true;
+            }
+            //Høyre:
+            if(e.keyCode == 39) {
+                buttonRight = true;
+            }
+            //Opp:
+            if(e.keyCode == 38) {
+                buttonUp = true;
+            }
+            //Ned:
+            if(e.keyCode == 40) {
+                buttonDown = true;
+            }
+        }
+        function buttonReleased(e) {
+            //Venstre:
+            if(e.keyCode == 37) {
+                buttonLeft = false;
+            }
+            //Høyre:
+            if(e.keyCode == 39) {
+                buttonRight = false;
+            }
+            //Opp:
+            if(e.keyCode == 38) {
+                buttonUp = false;
+            }
+            //Ned:
+            if(e.keyCode == 40) {
+                buttonDown = false;
+            }
+        }
+        //Update-funksjon som inneholder alle spillsekvenser når spillet er aktivt:
+        var collideX = 1; //Oppg.5: variabler til kollisjonsdeteksjon.
+        var collideY = 1;
+        //Oppg.1: Her er det laget en funkjson som forteller hva som skal skje hvis de ulike piltastene trykkes ned.  Hvis f.eks piltast til høyre trykkes ned, skal reapers x posisjon flyttes med reaper speeden ganger verdien som er pushet inn i parameteret modifier.
+        function update(modifier) {
+            //Flytt Reaper-spilleren
+            if(buttonLeft) {
+                reaper.x -= reaper.speed * modifier;
+                if(reaper.x <= 0) { //Oppg. 5: Plasserte inn kollisjonsdeteksjon i denne funksjonen, ettersom den allerede sjekket etter om piltastene trykkes, og klargjorde farten til reaperen. Kjørte en if test, for å sjekke om reaperen sine x og y koordinater traff canvaset sitt x og y koordinater.
+                    reaper.x = 0; //Oppg.5: Dersom reaper sitt x koordinat er mindre enn eller lik null, skal reaper sitt x koordinat settes til null. Altså fortsette som den er.
+                } else {
+                    reaper.x -= collideX; //Oppg. 5: Hvis ikke, må reaperen sitt x-koordinat flyttes negativt langs x-aksen, her minimum 1px.
+                }
+            }
+            if(buttonRight) { //Oppg. 5: Gjentok prosessen med alle piltaster og alle canvas vegger: venstre, høyre, opp og ned. Prosessen er litt forskjellig for de ulike veggene. Måtte sette canvas.width/height - 64 på sjekken mot høyre og ned. Ettersom reaper er 64px bred, slik at den holder seg innenfor canvas.
+                reaper.x += reaper.speed * modifier;
+                if(reaper.x >= canvas.width - 64) {
+                    reaper.x = canvas.width - 64;
+                } else {
+                    reaper.x += collideX;
+                }
+            }
+            if(buttonUp) {
+                reaper.y -= reaper.speed * modifier;
+                if(reaper.y <= 0) {
+                    reaper.y = 0;
+                } else {
+                    reaper.y -= collideY;
+                }
+            }
+            if(buttonDown) {
+                reaper.y += reaper.speed * modifier;
+                if(reaper.y >= canvas.height - 64) {
+                    reaper.y = canvas.height - 64;
+                } else {
+                    reaper.y += collideY;
+                }
+            }
+            //Oppg.1: I denne funksjonen utføres det også en sjekk for å teste om reaper kolliderer med fienden. f.eks hvis reaper sitt x og y koordinat er mindre enn eller lik fienden sin x eller y koordinat + 32, og omvendt, er det en kollisjon. Når det er en kollisjon, skal telleren enemiesSlayed plusse på 1. og karakterene skal tegnes opp på nytt.
+            //Sjekk om Reaper tar igjen fienden:
+            if(
+                reaper.x <= (enemy.x + 32) && 
+                reaper.y <= (enemy.y + 32) && 
+                enemy.x <= (reaper.x + 32) && 
+                enemy.y <= (reaper.y + 32) //Oppg.3.1: Utføre sjekken om reaper tar igjen fienden, nå også for fiende nr.2.
+            ) {
+                enemiesSlayed++;
+                drawCharactersOne();
+            }
+            if( //Oppg.3.2: La inn en ny if sjekk, for å skille mellom de to ulike fiendene ved kollisjon. Slik at den nye opptegningen kun skjer hos den fienden som er tatt.                 
+                reaper.x <= (two.x + 32) &&
+                reaper.y <= (two.y + 32) &&
+                two.x <= (reaper.x + 32) && 
+                two.y <= (reaper.y + 32) //Oppg.3.1: Utføre sjekken om reaper tar igjen fienden, nå også for fiende nr.2.
+                ) {
+                    enemiesSlayed++;
+                    drawCharactersTwo();
+                }
+        }
+
+        //Oppg.1: Her er det deklarert variabler som skal brukes til hjelp i blant annet den kommende funksjonen counter. Counter funksjonen er spillets sekund teller, og hver gang funksjonen kjøres vil den telle ned med 1. Den har også noen ting som skjer dersom count er mindre eller lik null. Da skal intervalen stoppes, slik at den stopper å telle. Gameover er sann, count er satt til 0 og alle karakterene settes til false slik at de forsvinner fra spillet.
+        //Gjør klar tidsteller:
+        var count = 60; //sekunder å spille på ved oppstart //Oppg. 2.2: Endret denne verdien fra 10 til 60, for at spillet skal vare i 60 sek før det avslutter.
+        var gameOver = false;
+        function counter() {
+            count--;
+            //Når telleren når 0, er spillet over. Da må vi resette og gjemme noen elementer til spillet starter igjen.
+            if(count <= 0) {
+                clearInterval(counter);
+                gameOver = true;
+                count = 0;
+                reaperLoaded = false;
+                enemyLoaded = false;
+                enemyTwoLoaded = false; //Oppg. 3.1: Sette fiende nr. 2 sin status også til false, ved game over.
+            }
+        }
+        //Oppg.1: denne kodebiten kjører counter funksjonen hvert 1000'ende millisekund (hvert sekund), som vil si at hvert sekund, vill count bli 1 mindre. AKA en sekund nedteller.
+        //Sett intervall (hvert sekund) for tidstelling ved å kjøre counter-funksjonen hvert 1000 milisekund
+        setInterval(counter, 1000);
+
+        //Oppg.1: Under er det laget en funksjon som forteller hva som skal skje dersom statusen til karakterene er satt til true. Hvis karakterene har status true, skal de tegnes opp på gitte posisjoner. I denne funksjonen blir det også klargjort hva som skal skje dersom gameover status er true. Da skal en rød stor skrift med teksten "game over" vises i spillet.
+        //Tegn opp spill-elementene på Canvas-elementet:
+        function renderGame() {
+            //Tegn spillbildene - hvis de er lastet ferdig:
+            if(backgroundLoaded === true) {
+                ctx.drawImage(background, 0, 0);
+            }
+            if(reaperLoaded === true) {
+                ctx.drawImage(reaperImage, reaper.x, reaper.y);
+            }
+            if(enemyLoaded === true) {
+                ctx.drawImage(enemyImage, enemy.x, enemy.y);
+            }
+            if(enemyTwoLoaded === true) {
+                ctx.drawImage(enemyTwoImage, two.x, two.y); //Oppg.3.1: Kode for å tegne opp fiende nr.2
+            }
+
+            // Display score and time 
+            /*ctx.fillStyle = "rgb(250, 250, 250)";
+            ctx.font = "24px Helvetica";
+            ctx.textAlign = "left";
+            ctx.textBaseline = "top";
+            ctx.fillText("Enemies slayn: " + enemiesSlayed, 20, 20);
+            ctx.fillText("Time left: " + count, 20, 50);*/
+            //Oppg.4.1: Fjernet koden over, for å fjerne opptegningen av teksten. La til ny kode under, for å skrive ut antall sekunder og antall fiender tatt til HTML'en jeg laget.
+            document.getElementById("seconds").innerHTML = count;
+            document.getElementById("slayn").innerHTML = enemiesSlayed;
+            // Display game over message when timer finished
+            if(gameOver == true){ 
+                ctx.fillStyle = "red";//Oppg. 2.1: Plasserte en ctx.fillstyle og ctx.font her for å spesifiserte font, størrelse og fargen på game over teksten.
+                ctx.font = "60px Rye";
+                ctx.fillText("Game over!", 200, 220);
+                document.getElementById("newgame").style.display = "block"; //Oppg.4.2: Plasserte en style.display = block her med henvisning til knappen i HTML koden, slik at hvis gameOver = true, så vil knappen dukke opp på skjermen.
+            } 
+        }
+        //Oppg.1: En funksjon som kjører de andre funksjonene, pluss sender inn verdi i parameteret til update() funksjonen.
+        //Kjør en hovedfunksjon for alle spill-delene vi har laget som repeteres (ved hjelp av requestAnimationFrame):
+        function gameRenderer() {
+            update(0.03); //Oppg. 2.4: Her sendes en verdi inn i parameteret til update funksjonen. Endret denne til 0.03 for å øke farten til reaperen med 0.03
+            renderGame();
+            requestAnimationFrame(gameRenderer);
+        }
+
+        //Oppg.1: Her er det lagt inn cross-browser support som sørger for at nettleseren kaller animasjons funksjonen for å oppdatere animasjonen før den neste opptegningen. Funnet informasjon om dette her: https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame
+        // Cross-browser support for requestAnimationFrame
+        var w = window;
+        requestAnimationFrame = w.requestAnimationFrame || w.webkitRequestAnimationFrame || w.msRequestAnimationFrame || w.mozRequestAnimationFrame;
+
+        //Oppg.1: Denne funksjonen nullstiller alle verdier til original verdiene. Slik resetter den spillet. Den kjører også ulike funskjoner som trenger å kjøres for å klargjøre for nytt spill.
+        // Funksjon som resetter/starter et spill
+        function playGame() {
+            //Startverdier:
+            var count = 60; //Oppg. 2.2: Endret også denne verdien fra 10 til 60, for at spillet skal vare i 60 sek før det avslutter.
+            var gameOver = false;
+            reaperLoaded = false;
+            enemyLoaded = false;
+            enemyTwoLoaded = false; //Oppg: 3.1: Sette statusen til fiende nr. 2 til false, når spillet resettes.
+            //Kjør funksjoner som kontrollerer spillhendelser
+            drawCharacters();
+            drawCharactersOne();
+            drawCharactersTwo();
+            renderGame();
+            requestAnimationFrame(gameRenderer);
+        }
+
+        playGame();
+
+        function gameRestart(){ //Oppg. 4.2: Måtte lage en funksjon for å restarte spillet, ettersom dette ikke allerede fantes i koden. Det fantes derimot funksjoner jeg kunne kjøre i denne funksjonen for å hjelpe meg med å tegne opp karakterene på nytt osv. Knyttet denne til knappen i HTML koden.
+            gameOver = false;
+            count = 60;
+            enemiesSlayed = 0;
+            reaperLoaded = true;
+            enemyLoaded = true;
+            enemyTwoLoaded = true;
+            drawCharacters();
+            drawCharactersOne();
+            drawCharactersTwo();
+            document.getElementById("newgame").style.display = "none";
+        }
+        
+    </script>
+</body>
+</html>
